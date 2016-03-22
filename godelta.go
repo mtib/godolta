@@ -13,10 +13,10 @@ var (
 	help = `USAGE:
     godelta encrypt <file> [-o <file>]
     godelta decrypt <file> [-o <file>]`
-	pass     = flag.String("p", "", "passphrase to use")
-	outp     = flag.String("o", "", "output file")
-	override = flag.Bool("y", false, "override existing file")
-	check    = flag.Bool("c", true, "disables checksum feature")
+	pass = flag.String("p", "", "passphrase to use")
+	outp = flag.String("o", "", "output file")
+	// override = flag.Bool("y", false, "override existing file")
+	check = flag.Bool("c", true, "use checksum feature")
 )
 
 func main() {
@@ -26,11 +26,12 @@ func main() {
 		flag.PrintDefaults()
 		return
 	}
+	fmt.Println(*check)
 	mode := flag.Arg(0)
 	file := flag.Arg(1)
 	switch mode {
 	case "encrypt", "e":
-		encrypt, err := deltal.Encrypt(&file, pass, *check)
+		encrypt, err := deltal.Encrypt(&file, pass, check)
 		if err != nil {
 			panic(err)
 		}
@@ -40,7 +41,7 @@ func main() {
 		}
 		ioutil.WriteFile(filename, encrypt, os.ModePerm)
 	case "decrypt", "d":
-		decrypt, err := deltal.Decrypt(&file, pass, *check)
+		decrypt, err := deltal.Decrypt(&file, pass)
 		if err != nil {
 			panic(err)
 		}
