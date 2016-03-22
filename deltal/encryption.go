@@ -35,7 +35,7 @@ func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 	for i := range toen { // This could be realized via io.Reader
 		res = append(res, byte((int(toen[i])+int(paarr[i%8]))%256))
 		if i > 0 {
-			res = append(res, byte((int(toen[i])+int(toen[i-1]))%256))
+			res[len(res)-1] = byte((int(res[len(res)-1]) + int(toen[i-1])) % 256)
 		}
 	} // Added all data & encrypted it
 	return res, nil
