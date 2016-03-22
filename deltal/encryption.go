@@ -26,42 +26,18 @@ func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 	var res []byte
 	res = append(res, 206, 148)
 	if *checksum {
-		// experimental
-		res = append(res, 76, 10)
-		res = append(res, u64tobyte(siphash.Hash(0, 0, toen))...) // Checksum
+		res = append(res, 76, 10)            // = L\n
+		res = append(res, rustHash(toen)...) // == Checksum
 
-	} else {
-		// Not using checksum
-		res = append(res, 108, 10)
-		// return nil, DeltaError("Not implemented")
+	} else { // Not using Checksum
+		res = append(res, 108, 10) // = l\n
 	}
-	// Start adding data
-	res = append(res, toen...)
-	// "encrypt"
-	var old0, old1 byte
-	for i := range res {
-		k := i - 4
-		if *checksum {
-			k -= 8
+	for i := range toen { // This could be realized via io.Reader
+		res = append(res, byte((int(toen[i])+int(paarr[i%8]))%256))
+		if i > 0 {
+			res = append(res, byte((int(toen[i])+int(toen[i-1]))%256))
 		}
-		old1 = old0
-		old0 = res[i]
-		if k >= 0 {
-			fmt.Printf("%02X->", res[i])
-			res[i] = byte((int(res[i]) + int(paarr[k%8])) % 256)
-			fmt.Printf("%02X:", res[i])
-			if k == 0 {
-				fmt.Print(";\n")
-			}
-		} else {
-			fmt.Printf("%02X;", res[i])
-		}
-		if k > 0 {
-			res[i] = byte((int(res[i]) + int(old1)) % 256)
-			fmt.Printf("->%02X(%02X);\n", res[i], old1)
-		}
-	}
-	// fin "encrypt"
+	} // Added all data & encrypted it
 	return res, nil
 }
 
@@ -76,7 +52,15 @@ func u64tobyte(num uint64) (b []byte) {
 		mov := i * uint(8)
 		mask := uint64(0xFF) << mov
 		masked := num & mask
-		b[7-i] = byte((masked >> mov) % 256)
+		b[i] = byte((masked >> mov) % 256)
 	}
 	return
+}
+
+func rustHash(b []byte) []byte {
+	return u64tobyte(intHash(b))
+}
+
+func intHash(b []byte) uint64 {
+	return siphash.Hash(uint64(0), uint64(0), b)
 }
