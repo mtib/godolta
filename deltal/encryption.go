@@ -28,7 +28,7 @@ func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 	if *checksum {
 		// experimental
 		res = append(res, 76, 10)
-		res = append(res, u64tobyte(siphash.Hash(0, 0, toen[:len(toen)-1]))...) // Checksum
+		res = append(res, u64tobyte(siphash.Hash(0, 0, toen))...) // Checksum
 
 	} else {
 		// Not using checksum
@@ -49,6 +49,11 @@ func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 			fmt.Printf("%02X->", res[i])
 			res[i] = byte((int(res[i]) + int(paarr[k%8])) % 256)
 			fmt.Printf("%02X:", res[i])
+			if k == 0 {
+				fmt.Print(";\n")
+			}
+		} else {
+			fmt.Printf("%02X;", res[i])
 		}
 		if k > 0 {
 			res[i] = byte((int(res[i]) + int(old1)) % 256)
