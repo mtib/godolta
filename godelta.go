@@ -4,6 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/mtib/godolta/deltal"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
 var (
@@ -26,12 +29,35 @@ func main() {
 	mode := flag.Arg(0)
 	file := flag.Arg(1)
 	switch mode {
-	case "encrypt":
-		deltal.Encrypt(&file)
-	case "decrypt":
-		deltal.Decrypt(&file)
+	case "encrypt", "e":
+		encrypt, err := deltal.Encrypt(&file, pass, *check)
+		if err != nil {
+			panic(err)
+		}
+		filename := file + ".delta"
+		if *outp != "" {
+			filename = *outp
+		}
+		ioutil.WriteFile(filename, encrypt, os.ModePerm)
+	case "decrypt", "d":
+		decrypt, err := deltal.Decrypt(&file, pass, *check)
+		if err != nil {
+			panic(err)
+		}
+		filename := removeDelta(file)
+		if *outp != "" {
+			filename = *outp
+		}
+		ioutil.WriteFile(filename, decrypt, os.ModePerm)
 	default:
 		fmt.Println(help)
 		flag.PrintDefaults()
 	}
+}
+
+func removeDelta(file string) string {
+	if strings.HasSuffix(file, ".delta") {
+		return file[:len(file)-6]
+	}
+	return file
 }
