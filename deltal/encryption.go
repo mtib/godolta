@@ -15,7 +15,7 @@ type DeltaError string
 func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 	toen, err := ioutil.ReadFile(*file)
 	fmt.Println("checksum:", *checksum)
-	paarr := u64tobyte(siphash.Hash(0, 0, []byte(*pass)))
+	paarr := rustHash([]byte(*pass))
 	if *pass == "" {
 		paarr = u64tobyte(0)
 	}
