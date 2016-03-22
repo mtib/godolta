@@ -36,13 +36,14 @@ func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 		// return nil, DeltaError("Not implemented")
 	}
 	// Start adding data
-	for i := 0; i < len(toen); i += 8 {
-		res = append(res, u64tobyte(siphash.Hash(0, 0, toen[i:i+8]))...)
-	}
+	res = append(res, toen...)
 	// "encrypt"
 	var old0, old1 byte
 	for i := range res {
-		k := i - 12
+		k := i - 4
+		if *checksum {
+			k -= 8
+		}
 		old1 = old0
 		old0 = res[i]
 		if k >= 0 {
