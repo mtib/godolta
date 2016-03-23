@@ -37,6 +37,14 @@ func NewEncoder(file, password string, checksum bool) (*Encoder, error) {
 	return NewEncoderReader(f, password, checksum)
 }
 
+// Reset resets the encoder, synonym to Seek(0,0)
+func (d *Encoder) Reset() {
+	d.Counter = 0
+	d.headerpos = 0
+	d.FileReader.Seek(0, 0)
+	d.last = 0
+}
+
 func (d *Encoder) Read(b []byte) (n int, err error) {
 	// Writing Checksum
 	for (d.UseChecksum && d.headerpos < 12) || (!d.UseChecksum && d.headerpos < 4) {
@@ -69,12 +77,21 @@ func (d *Encoder) Read(b []byte) (n int, err error) {
 	return
 }
 
-// FastEncrpyt is an easy-call function for benchmarking
+// FastEncrpyt is an easy-call function
 func FastEncrpyt(file, pass string) {
 	filein, _ := os.Open(file)
 	encoder, _ := NewEncoderReader(filein, pass, true)
 	encryptedData, _ := ioutil.ReadAll(encoder)
 	ioutil.WriteFile(file+".delta", encryptedData, os.ModePerm)
+}
+
+func benchEncrypter(file, pass string) (func(), *os.File) {
+	filein, _ := os.Open(file)
+	encoder, _ := NewEncoderReader(filein, pass, true)
+	return func() {
+		ioutil.ReadAll(encoder)
+		encoder.Reset()
+	}, filein
 }
 
 var (

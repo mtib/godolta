@@ -82,9 +82,19 @@ func (d *Decoder) Check(file []byte) bool {
 // FastDecrypt is an easy call function do decrypt a file
 func FastDecrypt(file, pass string) {
 	cryptin, _ := os.Open(file)
+	defer cryptin.Close()
 	decoder := NewDecoderStream(cryptin, pass)
 	decryptedData, _ := ioutil.ReadAll(decoder)
 	ioutil.WriteFile(file+".testdec", decryptedData, os.ModePerm)
+}
+
+func benchDecrypter(file, pass string) (func(), *os.File) {
+	cryptin, _ := os.Open(file)
+	decoder := NewDecoderStream(cryptin, pass)
+	return func() {
+		ioutil.ReadAll(decoder)
+		decoder.Seek(0, 0)
+	}, cryptin
 }
 
 // NewDecoderStream return initialized delta-l Decoder reading the stream io.Reader
