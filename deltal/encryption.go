@@ -3,6 +3,7 @@ package deltal
 import (
 	"fmt"
 	"github.com/dchest/siphash"
+	"io"
 	"io/ioutil"
 	"os"
 )
@@ -48,16 +49,17 @@ func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 }
 
 // NewEncoder returns pointer to decoder reader interface
-func NewEncoder(file, password string) *Decoder {
-	return Decoder{counter: 0, passarray: rustHash([]byte(password)), file: os.Open(file)}
+func NewEncoder(file, password string) (*Encoder, error) {
+	f, err := os.Open(file)
+	return &Encoder{counter: 0, passarray: rustHash([]byte(password)), file: f}, err
 }
 
 func (d *Encoder) Read(b []byte) (n int, err error) {
 	n, err = d.file.Read(b)
 	for k := range b {
-		b[k] = uint8(b[k] + d.passarray[(d.counter+k)%len(d.passarray)])
+		b[k] = uint8(b[k] + d.passarray[(d.counter+uint64(k))%uint64(len(d.passarray))])
 	}
-	d.counter += k
+	d.counter += uint64(n)
 	return
 }
 
