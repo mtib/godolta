@@ -10,25 +10,30 @@ import (
 type Encoder struct {
 	Counter     uint64
 	passarray   []byte
-	FileReader  io.Reader
+	FileReader  io.ReadSeeker
 	Checksum    []byte
 	UseChecksum bool
 	headerpos   int
 	last        uint8
 }
 
-// NewEncoder returns pointer to decoder reader interface
-func NewEncoder(file, password string, checksum bool) (*Encoder, error) {
-	f, err := os.Open(file)
-	barr, _ := ioutil.ReadAll(f)
-	f.Seek(0, 0)
+func NewEncoderReader(reader io.ReadSeeker, password string, checksum bool) (*Encoder, error) {
+	full, err := ioutil.ReadAll(reader)
+	reader.Seek(0, 0)
+
 	var pa []byte
 	if password != "" {
 		pa = rustHash([]byte(password))
 	} else {
-		pa = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+		pa = u64tobyte(0)
 	}
-	return &Encoder{Counter: 0, passarray: pa, FileReader: f, UseChecksum: checksum, headerpos: 0, Checksum: rustHash(barr)}, err
+	return &Encoder{passarray: pa, FileReader: reader, UseChecksum: checksum, Checksum: rustHash(full)}, err
+}
+
+// NewEncoder returns pointer to decoder reader interface
+func NewEncoder(file, password string, checksum bool) (*Encoder, error) {
+	f, _ := os.Open(file)
+	return NewEncoderReader(f, password, checksum)
 }
 
 func (d *Encoder) Read(b []byte) (n int, err error) {

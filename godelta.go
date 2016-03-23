@@ -36,20 +36,15 @@ func main() {
 		if *outp != "" {
 			filename = *outp
 		}
-		f, err := os.Open(filename)
-		if err == nil && !*force {
-			// File exists
-			fmt.Println("File exists, to overwrite use -f")
-			return
-		}
-		f, err = os.Create(filename)
+		f, err := tryCreateFile(filename)
 		if err != nil {
-			fmt.Println("Could not create file:", filename)
+			fmt.Println("Could not create file", filename)
 			return
 		}
 		encoder, err := deltal.NewEncoder(file, *pass, *check)
 		if err != nil {
-			panic(err)
+			fmt.Println("Could not create encoder\n", err)
+			return
 		}
 		io.Copy(f, encoder)
 	case "decrypt", "d":
@@ -57,7 +52,26 @@ func main() {
 		if *outp != "" {
 			filename = *outp
 		}
-		ioutil.WriteFile(filename, nil, os.ModePerm)
+		f, err := tryCreateFile(filename)
+		if err != nil {
+			fmt.Println("Could not create file", filename)
+			return
+		}
+		src, err := os.Open(file)
+		if err != nil {
+			fmt.Println("Could not open file", file)
+			return
+		}
+		decoder := deltal.NewDecoderStream(src, *pass)
+		io.Copy(f, decoder)
+		csum, err := ioutil.ReadFile(filename)
+		if err != nil {
+			fmt.Println("Could not verify checksum")
+			return
+		}
+		if !decoder.Check(csum) {
+			fmt.Println("Wrong checksum, proceed with caution")
+		}
 	default:
 		fmt.Println(help)
 		flag.PrintDefaults()
@@ -69,4 +83,24 @@ func removeDelta(file string) string {
 		return file[:len(file)-6]
 	}
 	return file
+}
+
+func tryCreateFile(file string) (*os.File, error) {
+	f, err := os.Open(file)
+	if err == nil && !*force {
+		// File exists
+		fmt.Println("File exists, to overwrite use -f")
+		return nil, os.ErrExist
+	}
+	if err == nil && *force {
+		os.Remove(f.Name())
+		f, err = os.Create(file)
+		return f, err
+	}
+	f, err = os.Create(file)
+	if err != nil {
+		fmt.Println("Could not create file:", file)
+		return nil, err
+	}
+	return f, nil
 }
