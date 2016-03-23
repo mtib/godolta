@@ -77,8 +77,8 @@ func (d *Encoder) Read(b []byte) (n int, err error) {
 	return
 }
 
-// FastEncrpyt is an easy-call function
-func FastEncrpyt(file, pass string) {
+// FastEncrypt is an easy-call function
+func FastEncrypt(file, pass string) {
 	filein, _ := os.Open(file)
 	encoder, _ := NewEncoderReader(filein, pass, true)
 	encryptedData, _ := ioutil.ReadAll(encoder)
