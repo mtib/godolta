@@ -1,6 +1,7 @@
 package deltal
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 )
@@ -29,6 +30,10 @@ func (d *Decoder) Init() {
 			d.Offset += 8
 		}
 	}
+}
+
+func (d *Decoder) String() string {
+	return fmt.Sprintf("Decoder: (Offset: %X) using Passhash: %v Checksum: %v (%v)", d.Offset, d.passhash, d.Checksum, d.UseChecksum)
 }
 
 // Seek as defined in io.Seeker interface

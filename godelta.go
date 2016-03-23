@@ -82,7 +82,7 @@ func removeDelta(file string) string {
 	if strings.HasSuffix(file, ".delta") {
 		return file[:len(file)-6]
 	}
-	return file
+	return file + ".dec"
 }
 
 func tryCreateFile(file string) (*os.File, error) {
