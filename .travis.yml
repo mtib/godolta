@@ -9,7 +9,7 @@ git:
 install:
     - go get ./...
     - mkdir test
-    - curl http://shakespeare.mit.edu/midsummer/full.html > test/bench.txt
+    - curl http://shakespeare.mit.edu/Poetry/LoversComplaint.html > test/bench.txt
 script:
     - go test -v ./...
     - cd deltal && go test -bench .
