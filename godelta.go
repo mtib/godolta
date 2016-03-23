@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/mtib/godolta/deltal"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -17,6 +18,7 @@ var (
 	outp = flag.String("o", "", "output file")
 	// override = flag.Bool("y", false, "override existing file")
 	check = flag.Bool("c", true, "use checksum feature")
+	force = flag.Bool("f", false, "force overwrite")
 )
 
 func main() {
@@ -26,30 +28,36 @@ func main() {
 		flag.PrintDefaults()
 		return
 	}
-	fmt.Println(*check)
 	mode := flag.Arg(0)
 	file := flag.Arg(1)
 	switch mode {
 	case "encrypt", "e":
-		encrypt, err := deltal.Encrypt(&file, pass, check)
-		if err != nil {
-			panic(err)
-		}
 		filename := file + ".delta"
 		if *outp != "" {
 			filename = *outp
 		}
-		ioutil.WriteFile(filename, encrypt, os.ModePerm)
-	case "decrypt", "d":
-		decrypt, err := deltal.Decrypt(&file, pass)
+		f, err := os.Open(filename)
+		if err == nil && !*force {
+			// File exists
+			fmt.Println("File exists, to overwrite use -f")
+			return
+		}
+		f, err = os.Create(filename)
+		if err != nil {
+			fmt.Println("Could not create file:", filename)
+			return
+		}
+		encoder, err := deltal.NewEncoder(file, *pass, *check)
 		if err != nil {
 			panic(err)
 		}
+		io.Copy(f, encoder)
+	case "decrypt", "d":
 		filename := removeDelta(file)
 		if *outp != "" {
 			filename = *outp
 		}
-		ioutil.WriteFile(filename, decrypt, os.ModePerm)
+		ioutil.WriteFile(filename, nil, os.ModePerm)
 	default:
 		fmt.Println(help)
 		flag.PrintDefaults()

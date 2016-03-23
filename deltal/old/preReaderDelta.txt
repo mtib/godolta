@@ -1,0 +1,30 @@
+
+// Encrypt returns encrypted files bytes
+func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
+	toen, err := ioutil.ReadFile(*file)
+	fmt.Println("checksum:", *checksum)
+	paarr := rustHash([]byte(*pass))
+	if *pass == "" {
+		paarr = u64tobyte(0)
+	}
+	fmt.Println(paarr)
+	if err != nil {
+		panic(DeltaError("Cannot read file"))
+	}
+	var res []byte
+	res = append(res, 206, 148) // Delta
+	if *checksum {
+		res = append(res, 76, 10)            // = L\n
+		res = append(res, rustHash(toen)...) // == Checksum
+
+	} else { // Not using Checksum
+		res = append(res, 108, 10) // = l\n
+	}
+	for i := range toen { // This could be realized via io.Reader
+		res = append(res, byte((int(toen[i])+int(paarr[i%8]))%256))
+		if i > 0 {
+			res[len(res)-1] = byte((int(res[len(res)-1]) + int(toen[i-1])) % 256)
+		}
+	} // Added all data & encrypted it
+	return res, nil
+}
