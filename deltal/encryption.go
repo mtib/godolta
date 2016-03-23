@@ -4,12 +4,18 @@ import (
 	"fmt"
 	"github.com/dchest/siphash"
 	"io/ioutil"
+	"os"
 )
 
 // DeltaError to be thrown when encryption fails
 type DeltaError string
 
-// TODO rewrite this as io.Writer / io.Reader
+// Decoder of delta-l
+type Encoder struct {
+	counter   uint64
+	passarray []byte
+	file      io.Reader
+}
 
 // Encrypt returns encrypted files bytes
 func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
@@ -39,6 +45,20 @@ func Encrypt(file, pass *string, checksum *bool) ([]byte, error) {
 		}
 	} // Added all data & encrypted it
 	return res, nil
+}
+
+// NewEncoder returns pointer to decoder reader interface
+func NewEncoder(file, password string) *Decoder {
+	return Decoder{counter: 0, passarray: rustHash([]byte(password)), file: os.Open(file)}
+}
+
+func (d *Encoder) Read(b []byte) (n int, err error) {
+	n, err = d.file.Read(b)
+	for k := range b {
+		b[k] = uint8(b[k] + d.passarray[(d.counter+k)%len(d.passarray)])
+	}
+	d.counter += k
+	return
 }
 
 func (d DeltaError) Error() string {
