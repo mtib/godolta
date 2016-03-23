@@ -1,8 +1,10 @@
 # godolta
+[![Build Status](https://travis-ci.org/mtib/godolta.svg?branch=master)](https://travis-ci.org/mtib/godolta)
+
 go port of https://github.com/LFalch/delta-l
 
 ## Usage
-    godolta [-p password] [-f] [-o file] [-c=false] <e[ncypt] | d[ecrypt]> <file> 
+    godolta [-p password] [-f] [-o file] [-c=false] <e[ncrypt] | d[ecrypt]> <file>
 
 # License
 The MIT License (MIT)
