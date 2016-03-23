@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 )
 
 // Decoder of delta-l files
@@ -76,6 +77,14 @@ func (d *Decoder) Check(file []byte) bool {
 		}
 	}
 	return true
+}
+
+// FastDecrypt is an easy call function do decrypt a file
+func FastDecrypt(file, pass string) {
+	cryptin, _ := os.Open(file)
+	decoder := NewDecoderStream(cryptin, pass)
+	decryptedData, _ := ioutil.ReadAll(decoder)
+	ioutil.WriteFile(file+".testdec", decryptedData, os.ModePerm)
 }
 
 // NewDecoderStream return initialized delta-l Decoder reading the stream io.Reader

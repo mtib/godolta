@@ -17,6 +17,7 @@ type Encoder struct {
 	last        uint8
 }
 
+// NewEncoderReader creates an Encoder
 func NewEncoderReader(reader io.ReadSeeker, password string, checksum bool) (*Encoder, error) {
 	full, err := ioutil.ReadAll(reader)
 	reader.Seek(0, 0)
@@ -66,6 +67,14 @@ func (d *Encoder) Read(b []byte) (n int, err error) {
 	}
 	n += n2
 	return
+}
+
+// FastEncrpyt is an easy-call function for benchmarking
+func FastEncrpyt(file, pass string) {
+	filein, _ := os.Open(file)
+	encoder, _ := NewEncoderReader(filein, pass, true)
+	encryptedData, _ := ioutil.ReadAll(encoder)
+	ioutil.WriteFile(file+".delta", encryptedData, os.ModePerm)
 }
 
 var (

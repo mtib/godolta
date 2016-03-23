@@ -73,6 +73,27 @@ func TestEncoder(t *testing.T) {
 	}
 }
 
+func BenchmarkEncryptNoPW(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		FastEncrpyt("../test/bench.txt", "")
+	}
+}
+func BenchmarkEncryptPW(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		FastEncrpyt("../test/bench.txt", "power")
+	}
+}
+func BenchmarkDecryptNoPW(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		FastDecrypt("../test/bench.txt", "")
+	}
+}
+func BenchmarkDecryptPW(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		FastDecrypt("../test/bench.txt", "power")
+	}
+}
+
 func check(err error, t *testing.T) {
 	if err != nil {
 		t.Fail()
