@@ -69,7 +69,7 @@ func main() {
 			fmt.Println("Could not verify checksum")
 			return
 		}
-		if !decoder.Check(csum) {
+		if decoder.UseChecksum && !decoder.Check(csum) {
 			fmt.Println("Wrong checksum, proceed with caution")
 		}
 	default:
