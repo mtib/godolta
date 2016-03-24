@@ -3,8 +3,10 @@ package deltal
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -59,18 +61,32 @@ func TestEncoder(t *testing.T) {
 		fmt.Println(decoder)
 		decoder.Seek(0, 0)
 	}
+	var wg *sync.WaitGroup
+	wg = new(sync.WaitGroup)
 	for source, decrypts := range writtenFiles {
 		sourceData, _ := ioutil.ReadFile(source)
 		for _, file := range decrypts {
-			decrpytData, _ := ioutil.ReadFile(file)
-			if bytes.Equal(sourceData, decrpytData) {
-				fmt.Println("Successfull", source, file)
-			} else {
-				fmt.Println("Failed", source, file)
-				t.Fail()
-			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				decrpytData, _ := ioutil.ReadFile(file)
+				if bytes.Equal(sourceData, decrpytData) {
+					fmt.Println("Successfull", source, file)
+				} else {
+					fmt.Println("Failed", source, file)
+					t.Fail()
+				}
+			}()
 		}
+		wg.Wait()
 	}
+}
+
+func TestCompressEncryption(t *testing.T) {
+	reader, _ := os.Open("old/preReaderDelta.txt")
+	encoder, _ := NewCompressedEncoderReader(reader, "pass", true)
+	output, _ := os.Create("../test/compressed.txt.gz.delta")
+	io.Copy(output, encoder)
 }
 
 func BenchmarkEncryptNoPW(b *testing.B) {

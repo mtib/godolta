@@ -1,6 +1,8 @@
 package deltal
 
 import (
+	"bytes"
+	"compress/gzip"
 	"io"
 	"io/ioutil"
 	"os"
@@ -21,20 +23,68 @@ type Encoder struct {
 func NewEncoderReader(reader io.ReadSeeker, password string, checksum bool) (*Encoder, error) {
 	full, err := ioutil.ReadAll(reader)
 	reader.Seek(0, 0)
-
-	var pa []byte
-	if password != "" {
-		pa = rustHash([]byte(password))
-	} else {
-		pa = u64tobyte(0)
-	}
-	return &Encoder{passarray: pa, FileReader: reader, UseChecksum: checksum, Checksum: rustHash(full)}, err
+	return &Encoder{passarray: stringToArray(password), FileReader: reader, UseChecksum: checksum, Checksum: rustHash(full)}, err
 }
 
 // NewEncoder returns pointer to decoder reader interface
 func NewEncoder(file, password string, checksum bool) (*Encoder, error) {
 	f, _ := os.Open(file)
 	return NewEncoderReader(f, password, checksum)
+}
+
+type compressedByte struct {
+	data   []byte
+	offset int64
+}
+
+func (c *compressedByte) Read(b []byte) (n int, err error) {
+	begin := c.offset
+	c.offset += int64(len(b))
+	if c.offset > int64(len(c.data)) {
+		err = io.EOF
+		c.offset = int64(len(c.data))
+	}
+	n = int(c.offset - begin)
+	for k := begin; k < c.offset; k++ {
+		b[k] = c.data[k]
+	}
+	return
+}
+
+func (c *compressedByte) Seek(delta int64, from int) (to int64, err error) {
+	switch from {
+	case 0:
+		c.offset = delta
+	case 2:
+		c.offset = int64(len(c.data) - 1) // minus one?
+	case 1:
+		c.offset += delta
+	}
+	if c.offset < 0 || c.offset > int64(len(c.data)) {
+		err = io.ErrUnexpectedEOF
+	}
+	to = c.offset
+	return
+}
+
+// NewCompressedEncoderReader gzips the file before encryption
+func NewCompressedEncoderReader(reader io.ReadSeeker, password string, checksum bool) (*Encoder, error) {
+	var b bytes.Buffer
+	gzwriter := gzip.NewWriter(&b)
+	io.Copy(gzwriter, reader)
+	gzwriter.Flush()
+	gzwriter.Close()
+	buf, err := ioutil.ReadAll(&b)
+	return &Encoder{passarray: stringToArray(password), FileReader: &compressedByte{buf, 0}, UseChecksum: checksum, Checksum: rustHash(buf)}, err
+}
+
+func stringToArray(p string) (pa []byte) {
+	if p != "" {
+		pa = rustHash([]byte(p))
+	} else {
+		pa = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	}
+	return
 }
 
 // Reset resets the encoder, synonym to Seek(0,0)
