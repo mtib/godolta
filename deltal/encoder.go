@@ -34,37 +34,41 @@ func NewEncoder(file, password string, checksum bool) (*Encoder, error) {
 
 type compressedByte struct {
 	data   []byte
-	offset int64
+	offset int
 }
 
-func (c *compressedByte) Read(b []byte) (n int, err error) {
-	begin := c.offset
-	c.offset += int64(len(b))
-	if c.offset > int64(len(c.data)) {
-		err = io.EOF
-		c.offset = int64(len(c.data))
+func (b *compressedByte) Read(p []byte) (n int, err error) {
+	delta := len(b.data) - b.offset
+	if len(p) >= delta {
+		for k, v := range b.data[b.offset:] {
+			p[k] = v
+		}
+		b.offset = len(b.data)
+		return delta, io.EOF
 	}
-	n = int(c.offset - begin)
-	for k := begin; k < c.offset; k++ {
-		b[k] = c.data[k]
+	for k, v := range b.data[b.offset : b.offset+len(p)] {
+		p[k] = v
 	}
-	return
+	b.offset += len(p)
+	return len(p), nil
 }
 
-func (c *compressedByte) Seek(delta int64, from int) (to int64, err error) {
-	switch from {
+// Seek makes this a io.Seeker
+func (b *compressedByte) Seek(offset int64, whence int) (int64, error) {
+	var err error
+	switch whence {
 	case 0:
-		c.offset = delta
+		b.offset = int(offset)
 	case 2:
-		c.offset = int64(len(c.data) - 1) // minus one?
+		b.offset = len(b.data)
+		fallthrough
 	case 1:
-		c.offset += delta
+		b.offset += int(offset)
 	}
-	if c.offset < 0 || c.offset > int64(len(c.data)) {
-		err = io.ErrUnexpectedEOF
+	if int(b.offset) > len(b.data) {
+		err = io.EOF
 	}
-	to = c.offset
-	return
+	return int64(b.offset), err
 }
 
 // NewCompressedEncoderReader gzips the file before encryption
